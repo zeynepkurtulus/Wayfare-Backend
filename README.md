@@ -2,17 +2,17 @@
 
 A comprehensive travel planning API built with FastAPI that helps users create personalized travel itineraries, manage routes, and share experiences through feedback systems.
 
-## ✨ Features
+## Features
 
-- **🔐 User Authentication**: JWT-based authentication with email verification
-- **🗺️ Route Planning**: AI-powered travel route generation with smart scheduling
-- **📍 Places Management**: Comprehensive places database with geocoding
-- **🏙️ Cities & Countries**: Location management system
-- **📧 Email Verification**: Secure email verification for user registration
-- **⭐ Feedback System**: User reviews and ratings for places and routes
-- **📊 Analytics**: Route statistics and feedback analytics
+- **User Authentication**: JWT-based authentication with email verification
+- **Route Planning**: AI-powered travel route generation with smart scheduling
+- **Places Management**: Comprehensive places database with geocoding
+- **Cities & Countries**: Location management system
+- **Email Verification**: Secure email verification for user registration
+- **Feedback System**: User reviews and ratings for places and routes
+- **Analytics**: Route statistics and feedback analytics
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -57,7 +57,7 @@ uvicorn backend.main:app --reload
 
 The API will be available at: `http://localhost:8000`
 
-## ⚙️ Environment Setup
+## Environment Setup
 
 ### Required Environment Variables
 
@@ -90,14 +90,14 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
-### 📧 Email Setup (Gmail)
+###Email Setup (Gmail)
 
 1. **Enable 2-Step Verification**: Go to [Google Account Security](https://myaccount.google.com/security)
 2. **Create App Password**: Visit [App Passwords](https://myaccount.google.com/apppasswords)
 3. **Generate Password**: Create password for "WayfareProject"
 4. **Update .env**: Add the 16-digit password to `GMAIL_APP_PASSWORD`
 
-## 📁 Project Structure
+##Project Structure
 
 ```
 WayfareProject/
@@ -116,16 +116,16 @@ WayfareProject/
 └── README.md                    # This file
 ```
 
-## 📊 API Documentation
+## API Documentation
 
 ### Available Endpoints
 
-- **👤 User Management**: Registration, login, profile management
-- **🗺️ Route Planning**: Create, update, delete travel routes
-- **📍 Places**: Search and manage places
-- **🏙️ Cities & Countries**: Location data management
-- **📧 Email Verification**: Secure email verification system
-- **⭐ Feedback**: User reviews and ratings
+- **User Management**: Registration, login, profile management
+- **🗺Route Planning**: Create, update, delete travel routes
+- **Places**: Search and manage places
+- **🏙Cities & Countries**: Location data management
+- **Email Verification**: Secure email verification system
+- **Feedback**: User reviews and ratings
 
 ### Interactive Documentation
 
@@ -165,7 +165,7 @@ curl -X POST "http://localhost:8000/user/sendVerification" \
 3. **Update Main**: Register routes in `backend/main.py`
 4. **Update Docs**: Add to `API_DOCUMENTATION.md`
 
-## 🛡️ Security Considerations
+##  Security Considerations
 
 - **Environment Variables**: Never commit `.env` files
 - **API Keys**: Use App Passwords for Gmail, not regular passwords
@@ -190,7 +190,7 @@ mail_config = development_config
 mail_config = gmail_config
 ```
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
@@ -198,11 +198,11 @@ mail_config = gmail_config
 4. Push to branch: `git push origin feature-name`
 5. Submit a pull request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
 
-## 🆘 Support
+## Support
 
 For issues and questions:
 1. Check the [API Documentation](API_DOCUMENTATION.md)
@@ -210,7 +210,7 @@ For issues and questions:
 3. Ensure all dependencies are installed
 4. Verify MongoDB and email configurations
 
-## 🔄 Version History
+## Version History
 
 - **v1.0.0**: Initial release with core features
   - User authentication and email verification

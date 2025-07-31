@@ -1,0 +1,21 @@
+# WayfareProject Environment Variables
+# Copy this file to .env and fill in your actual values
+
+# Database Configuration
+MONGO_USERNAME=your_mongo_username
+MONGO_PASSWORD=your_mongo_password
+MONGO_CLUSTER=your_cluster_url
+MONGO_DATABASE=Wayfare
+
+# JWT Security Keys
+SECRET_KEY=your_jwt_secret_key_here
+FORGET_PWD_SECRET_KEY=your_forget_password_secret_key_here
+
+# Email Configuration
+GMAIL_USERNAME=your_project_email@gmail.com
+GMAIL_APP_PASSWORD=your_16_digit_app_password
+GMAIL_FROM=your_project_email@gmail.com
+
+# Application Settings
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30 

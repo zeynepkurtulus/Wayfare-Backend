@@ -121,9 +121,9 @@ WayfareProject/
 ### Available Endpoints
 
 - **User Management**: Registration, login, profile management
-- **🗺Route Planning**: Create, update, delete travel routes
+- **Route Planning**: Create, update, delete travel routes
 - **Places**: Search and manage places
-- **🏙Cities & Countries**: Location data management
+- **Cities & Countries**: Location data management
 - **Email Verification**: Secure email verification system
 - **Feedback**: User reviews and ratings
 
@@ -135,7 +135,7 @@ Once the server is running, visit:
 
 For detailed API documentation, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
 
-## 🗄️ Database Schema
+## Database Schema
 
 The project uses MongoDB with the following collections:
 
@@ -147,7 +147,7 @@ The project uses MongoDB with the following collections:
 - **place_feedback**: User reviews for places
 - **route_feedback**: User reviews for routes
 
-## 🔧 Development
+## Development
 
 ### Running Tests
 
@@ -172,7 +172,7 @@ curl -X POST "http://localhost:8000/user/sendVerification" \
 - **JWT Secrets**: Generate strong, unique secret keys
 - **Database**: Use MongoDB Atlas with proper authentication
 
-## 📈 Production Deployment
+## Production Deployment
 
 ### Environment-Specific Configurations
 

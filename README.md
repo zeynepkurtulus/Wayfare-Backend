@@ -1,4 +1,4 @@
-# 🗺 WayfareProject - Travel Planning API
+# WayfareProject - Travel Planning API
 
 A comprehensive travel planning API built with FastAPI that helps users create personalized travel itineraries, manage routes, and share experiences through feedback systems.
 

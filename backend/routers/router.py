@@ -1,4 +1,3 @@
-
 from models.model import UserRegistration
 from typing import List  # Import List from the typing module
 from fastapi import APIRouter
@@ -68,7 +67,8 @@ from models.model import(
     SubmitFeedbackResponse, GetPlaceFeedbackResponse, GetRouteFeedbackResponse,
     UpdateFeedbackResponse, DeleteFeedbackResponse, FeedbackStatsResponse,
     # Email Verification Models
-    SendVerificationRequest, VerifyCodeRequest, VerificationResponse
+    SendVerificationRequest, VerifyCodeRequest, VerificationResponse,
+    TopRatedPlacesResponse, TopRatedPlaceResponse
 )
 from config.database import (
     user_collection,
@@ -3947,6 +3947,120 @@ async def send_verification_email_endpoint(request: SendVerificationRequest):
             status_code=200
         )
 
+async def get_top_rated_places_endpoint(token: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
+    """
+    Get top 5 rated places based on aggregated feedback ratings.
+    Returns places with their average feedback rating and all place details.
+    """
+    try:
+        # User authentication
+        try:
+            payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+            username = payload.get("sub")
+            if not username:
+                return TopRatedPlacesResponse(
+                    success=False,
+                    message="Invalid credentials",
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    data=[]
+                )
+        except JWTError:
+            return TopRatedPlacesResponse(
+                success=False,
+                message="Invalid token",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                data=[]
+            )
+
+        # Aggregate feedback ratings for each place
+        pipeline = [
+            {
+                "$group": {
+                    "_id": "$place_id",
+                    "total_rating": {"$sum": "$rating"},
+                    "feedback_count": {"$sum": 1},
+                    "average_rating": {"$avg": "$rating"}
+                }
+            },
+            {
+                "$sort": {
+                    "average_rating": -1,  # Highest average rating first
+                    "_id": 1  # Then alphabetically by place_id
+                }
+            },
+            {
+                "$limit": 5  # Get top 5 places
+            }
+        ]
+        
+        # Execute aggregation pipeline
+        feedback_aggregation = await place_feedback_collection.aggregate(pipeline).to_list(length=None)
+        
+        if not feedback_aggregation:
+            return TopRatedPlacesResponse(
+                success=True,
+                message="No feedback data available",
+                status_code=200,
+                data=[]
+            )
+        
+        # Get place details for the top-rated places
+        top_rated_places = []
+        for feedback_data in feedback_aggregation:
+            place_id = feedback_data["_id"]
+            
+            # Get place details from places collection
+            place = await places_collection.find_one({"place_id": place_id})
+            
+            if place:
+                # Create TopRatedPlaceResponse object
+                top_rated_place = TopRatedPlaceResponse(
+                    place_id=place_id,
+                    name=place.get("name", ""),
+                    city=place.get("city", ""),
+                    category=place.get("category", ""),
+                    wayfare_category=place.get("wayfare_category"),
+                    price=place.get("price"),
+                    rating=float(place.get("rating", 0) or 0),  # Original place rating
+                    wayfare_rating=round(feedback_data["average_rating"], 2),  # Calculated average (renamed)
+                    total_feedback_count=feedback_data["feedback_count"],
+                    image=place.get("image"),
+                    detail_url=place.get("detail_url"),
+                    opening_hours=place.get("opening_hours"),
+                    coordinates=PlaceCoordinates(
+                        lat=place.get("coordinates", {}).get("lat", 0.0),
+                        lng=place.get("coordinates", {}).get("lng", 0.0)
+                    ) if place.get("coordinates") else None,
+                    address=place.get("address"),
+                    source=place.get("source"),
+                    country=place.get("country"),
+                    country_id=place.get("country_id"),
+                    city_id=place.get("city_id"),
+                    popularity=float(place.get("popularity", 0) or 0),
+                    duration=place.get("duration"),
+                    created_at=place.get("created_at"),
+                    updated_at=place.get("updated_at")
+                )
+                top_rated_places.append(top_rated_place)
+        
+        # Sort by wayfare rating (descending) and then alphabetically by name
+        top_rated_places.sort(key=lambda x: (-x.wayfare_rating, x.name.lower()))
+        
+        return TopRatedPlacesResponse(
+            success=True,
+            message="Top rated places retrieved successfully",
+            status_code=200,
+            data=top_rated_places
+        )
+        
+    except Exception as e:
+        return TopRatedPlacesResponse(
+            success=False,
+            message=f"Error retrieving top rated places: {str(e)}",
+            status_code=500,
+            data=[]
+        )
+
 async def verify_email_code_endpoint(request: VerifyCodeRequest):
     """Verify the email verification code"""
     try:
@@ -3980,3 +4094,4 @@ async def verify_email_code_endpoint(request: VerifyCodeRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error verifying code: {str(e)}") 
+

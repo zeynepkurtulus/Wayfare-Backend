@@ -49,6 +49,8 @@ from routers.router import(
     # Email verification endpoints
     send_verification_email_endpoint,
     verify_email_code_endpoint,
+    # Top rated places endpoint
+    get_top_rated_places_endpoint,
 )
 
 from models.model import (
@@ -249,6 +251,13 @@ async def autocomplete_places_main(
     token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
 ):
     return await autocomplete_places_endpoint(request, token)
+
+
+@app.get("/places/top-rated", tags=["Places"])
+async def get_top_rated_places_main(
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
+):
+    return await get_top_rated_places_endpoint(token)
 
 
 # CITIES ENDPOINTS

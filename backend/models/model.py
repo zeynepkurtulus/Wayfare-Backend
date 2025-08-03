@@ -468,3 +468,34 @@ class VerificationResponse(BaseModel):
     message: str
     status_code: int
 
+# ==================== TOP RATED PLACES MODELS ====================
+class TopRatedPlaceResponse(BaseModel):
+    place_id: str
+    name: str
+    city: str
+    category: str
+    wayfare_category: Optional[str] = None
+    price: Optional[str] = None
+    rating: float  # Original place rating
+    wayfare_rating: float  # Calculated average from feedback (renamed)
+    total_feedback_count: int  # Number of feedback entries
+    image: Optional[str] = None
+    detail_url: Optional[str] = None
+    opening_hours: Optional[Dict[str, str]] = None
+    coordinates: Optional[PlaceCoordinates] = None
+    address: Optional[str] = None
+    source: Optional[str] = None
+    country: Optional[str] = None
+    country_id: Optional[str] = None
+    city_id: Optional[str] = None
+    popularity: Optional[float] = None
+    duration: Optional[int] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+class TopRatedPlacesResponse(BaseModel):
+    success: bool
+    message: str
+    status_code: int
+    data: List[TopRatedPlaceResponse]
+

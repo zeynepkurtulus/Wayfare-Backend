@@ -688,6 +688,116 @@ It allows users to:
 
 ---
 
+### **@GET /places/top-rated**
+🔒 **Requires Authentication**
+
+It allows users to:
+- Retrieve the top 5 rated places based on aggregated user feedback
+- Get places with calculated average ratings from multiple feedback entries
+- Access complete place details including original ratings and feedback statistics
+- View places sorted by average feedback rating (highest first) and alphabetically by name
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Top rated places retrieved successfully",
+    "status_code": 200,
+    "data": [
+        {
+            "place_id": "abc123",
+            "name": "Vatican Museums",
+            "city": "Rome",
+            "category": "museum",
+            "wayfare_category": "cultural",
+            "price": "€17",
+            "rating": 4.5,
+            "wayfare_rating": 4.8,
+            "total_feedback_count": 15,
+            "image": "https://example.com/vatican.jpg",
+            "detail_url": "https://example.com/vatican-museums",
+            "opening_hours": {
+                "monday": "09:00-18:00",
+                "tuesday": "09:00-18:00"
+            },
+            "coordinates": {
+                "lat": 41.9065,
+                "lng": 12.4536
+            },
+            "address": "Viale Vaticano, 00165 Roma RM, Italy",
+            "source": "wayfare",
+            "country": "Italy",
+            "country_id": "IT",
+            "city_id": "rome_001",
+            "popularity": 1.2,
+            "duration": 240,
+            "created_at": "2024-01-15T10:30:00Z",
+            "updated_at": "2024-01-15T10:30:00Z"
+        },
+        {
+            "place_id": "def456",
+            "name": "Colosseum",
+            "city": "Rome",
+            "category": "historical_site",
+            "wayfare_category": "historical",
+            "price": "€16",
+            "rating": 4.3,
+            "wayfare_rating": 4.7,
+            "total_feedback_count": 12,
+            "image": "https://example.com/colosseum.jpg",
+            "detail_url": "https://example.com/colosseum",
+            "opening_hours": {
+                "monday": "08:30-19:15",
+                "tuesday": "08:30-19:15"
+            },
+            "coordinates": {
+                "lat": 41.8902,
+                "lng": 12.4922
+            },
+            "address": "Piazza del Colosseo, 1, 00184 Roma RM, Italy",
+            "source": "wayfare",
+            "country": "Italy",
+            "country_id": "IT",
+            "city_id": "rome_001",
+            "popularity": 1.5,
+            "duration": 180,
+            "created_at": "2024-01-15T10:30:00Z",
+            "updated_at": "2024-01-15T10:30:00Z"
+        }
+    ]
+}
+```
+
+**Response Fields:**
+- `place_id`: Unique identifier for the place
+- `name`: Name of the place
+- `city`: City where the place is located
+- `category`: Primary category of the place
+- `wayfare_category`: Wayfare-specific category classification
+- `price`: Price information for visiting the place
+- `rating`: Original place rating from the database
+- `wayfare_rating`: Calculated average rating from user feedback (rounded to 2 decimal places)
+- `total_feedback_count`: Number of feedback entries for this place
+- `image`: URL to place image
+- `detail_url`: URL to detailed information about the place
+- `opening_hours`: Opening hours for each day of the week
+- `coordinates`: Geographical coordinates (latitude and longitude)
+- `address`: Full address of the place
+- `source`: Source of the place data
+- `country`: Country where the place is located
+- `country_id`: Country identifier
+- `city_id`: City identifier
+- `popularity`: Popularity score (lower numbers indicate higher popularity)
+- `duration`: Recommended visit duration in minutes
+- `created_at`: Timestamp when the place was added to the database
+- `updated_at`: Timestamp when the place was last updated
+
+**Sorting Logic:**
+- Primary sort: Wayfare rating (highest first)
+- Secondary sort: Place name (alphabetical order) in case of rating ties
+
+---
+
 ## 🏙️ **Cities Management Endpoints**
 
 ### **@GET /cities/all**

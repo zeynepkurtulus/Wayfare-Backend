@@ -91,6 +91,7 @@ class Activity(BaseModel):
     place_name: str
     time: Optional[str] = None
     notes: Optional[str] = None
+    image: Optional[str] = None  # Add image field for place images
 
 class Day(BaseModel):
     date: str

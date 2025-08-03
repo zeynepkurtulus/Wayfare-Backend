@@ -2934,7 +2934,7 @@ async def autocomplete_places_endpoint(
 # ROUTE MANAGEMENT ENDPOINTS
 
 async def get_user_routes_endpoint(token: HTTPAuthorizationCredentials):
-    """Get all routes for the current user"""
+    """Get all routes for the current user with place images"""
     try:
         payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
@@ -2960,6 +2960,32 @@ async def get_user_routes_endpoint(token: HTTPAuthorizationCredentials):
         
         route_responses = []
         for route in routes:
+            # Process each route to add images to activities
+            if "days" in route and route["days"]:
+                for day in route["days"]:
+                    if "activities" in day and day["activities"]:
+                        enhanced_activities = []
+                        for activity in day["activities"]:
+                            # Create enhanced activity with image
+                            enhanced_activity = activity.copy()
+                            
+                            # Skip travel and break activities
+                            place_id = activity.get("place_id")
+                            if place_id and not place_id.startswith(("travel_", "break_")):
+                                # Look up place image from places collection
+                                place = await places_collection.find_one({"place_id": place_id})
+                                if place and place.get("image"):
+                                    enhanced_activity["image"] = place["image"]
+                                else:
+                                    enhanced_activity["image"] = None
+                            else:
+                                enhanced_activity["image"] = None
+                            
+                            enhanced_activities.append(enhanced_activity)
+                        
+                        # Replace activities with enhanced activities
+                        day["activities"] = enhanced_activities
+            
             route["route_id"] = str(route["_id"])
             route["user_id"] = str(route["user_id"])
             route.pop("_id", None)

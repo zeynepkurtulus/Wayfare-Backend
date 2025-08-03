@@ -320,6 +320,7 @@ It allows users to:
 - Retrieve all routes created by the authenticated user
 - View route summaries and basic information
 - Access personal travel planning history
+- Get place images for each activity in the daily itinerary
 
 **Response:**
 ```json
@@ -410,7 +411,8 @@ It allows users to:
                         "place_id": "abc123",
                         "place_name": "Colosseum",
                         "time": "10:00",
-                        "notes": "Visit the Colosseum"
+                        "notes": "Visit the Colosseum",
+                        "image": "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/15/f0/6b/18/gita-fuori-porta-avevo.jpg?w=500&h=400&s=1"
                     }
                 ]
             }

@@ -2934,7 +2934,7 @@ async def autocomplete_places_endpoint(
 # ROUTE MANAGEMENT ENDPOINTS
 
 async def get_user_routes_endpoint(token: HTTPAuthorizationCredentials):
-    """Get all routes for the current user with place images"""
+    """Get all routes for the current user with place images (optimized)"""
     try:
         payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
@@ -2958,9 +2958,31 @@ async def get_user_routes_endpoint(token: HTTPAuthorizationCredentials):
         user_id = str(user["_id"])
         routes = await route_collection.find({"user_id": user_id}).to_list(length=None)
         
+        # Collect all unique place_ids from all routes to batch fetch images
+        all_place_ids = set()
+        for route in routes:
+            if "days" in route and route["days"]:
+                for day in route["days"]:
+                    if "activities" in day and day["activities"]:
+                        for activity in day["activities"]:
+                            place_id = activity.get("place_id")
+                            if place_id and not place_id.startswith(("travel_", "break_")):
+                                all_place_ids.add(place_id)
+        
+        # Batch fetch all place images in one query
+        place_images = {}
+        if all_place_ids:
+            places = await places_collection.find(
+                {"place_id": {"$in": list(all_place_ids)}},
+                {"place_id": 1, "image": 1}  # Only fetch place_id and image fields
+            ).to_list(length=None)
+            
+            # Create a lookup dictionary for fast access
+            place_images = {place["place_id"]: place.get("image") for place in places}
+        
+        # Process routes and add images using the lookup dictionary
         route_responses = []
         for route in routes:
-            # Process each route to add images to activities
             if "days" in route and route["days"]:
                 for day in route["days"]:
                     if "activities" in day and day["activities"]:
@@ -2969,15 +2991,10 @@ async def get_user_routes_endpoint(token: HTTPAuthorizationCredentials):
                             # Create enhanced activity with image
                             enhanced_activity = activity.copy()
                             
-                            # Skip travel and break activities
+                            # Add image from lookup dictionary
                             place_id = activity.get("place_id")
                             if place_id and not place_id.startswith(("travel_", "break_")):
-                                # Look up place image from places collection
-                                place = await places_collection.find_one({"place_id": place_id})
-                                if place and place.get("image"):
-                                    enhanced_activity["image"] = place["image"]
-                                else:
-                                    enhanced_activity["image"] = None
+                                enhanced_activity["image"] = place_images.get(place_id)
                             else:
                                 enhanced_activity["image"] = None
                             

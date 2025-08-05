@@ -802,6 +802,80 @@ It allows users to:
 
 ## 🏙️ **Cities Management Endpoints**
 
+### **@GET /cities/search**
+🔒 **Requires Authentication**
+
+It allows users to:
+- Search for cities by name with real-time autocomplete functionality
+- Get city suggestions as users type in the destination field
+- Retrieve city details including coordinates for UI integration
+- Ensure only valid cities can be selected for route creation
+
+**Query Parameters:**
+- `q` (required): Search query string (minimum 2 characters)
+- `limit` (optional): Maximum number of results to return (default: 10, max: 20)
+
+**Request Examples:**
+```
+GET /cities/search?q=Ro&limit=5
+GET /cities/search?q=Rome
+GET /cities/search?q=Par&limit=3
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Found 2 cities matching 'Ro'",
+    "status_code": 200,
+    "data": [
+        {
+            "city_id": "68824f500658a953e0de8233",
+            "name": "Rome",
+            "country": "Italy",
+            "country_id": "IT",
+            "display_text": "Rome, Italy",
+            "coordinates": {
+                "lat": 41.9028,
+                "lng": 12.4964
+            }
+        },
+        {
+            "city_id": "68824f506d75e9efdf51f44c",
+            "name": "Rotterdam",
+            "country": "Netherlands", 
+            "country_id": "NL",
+            "display_text": "Rotterdam, Netherlands",
+            "coordinates": {
+                "lat": 51.9244424,
+                "lng": 4.47775
+            }
+        }
+    ]
+}
+```
+
+**Response Fields:**
+- `city_id`: Unique identifier for the city
+- `name`: City name (use this for route creation)
+- `country`: Country where the city is located
+- `country_id`: ISO country code
+- `display_text`: Formatted text for UI display (e.g., "Rome, Italy")
+- `coordinates`: Geographical coordinates (latitude and longitude)
+
+**Usage in UI:**
+1. User types in search box → Call this endpoint when query ≥ 2 characters
+2. Display `display_text` in dropdown options
+3. When user selects a city → Use `name` field for route creation
+4. Store full city object for reference and validation
+
+**Error Responses:**
+- 401: Invalid or missing authentication token
+- 400: Query parameter missing or too short
+- 500: Server error during search
+
+---
+
 ### **@GET /cities/all**
 🔒 **Requires Authentication**
 

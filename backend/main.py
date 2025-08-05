@@ -24,6 +24,7 @@ from routers.router import(
     delete_route_endpoint,
     get_public_routes_endpoint,
     get_cities_endpoint,
+    search_cities_endpoint,
     get_cities_by_country_endpoint,
     get_all_countries_endpoint,
     get_countries_by_region_endpoint,
@@ -261,6 +262,15 @@ async def get_top_rated_places_main(
 
 
 # CITIES ENDPOINTS
+@app.get("/cities/search", tags=["Cities"])
+async def search_cities(
+    q: str,
+    limit: int = 10,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
+):
+    return await search_cities_endpoint(q, limit, token)
+
+
 @app.get("/cities/all", tags=["Cities"])
 async def get_all_cities(token: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     return await get_cities_endpoint()

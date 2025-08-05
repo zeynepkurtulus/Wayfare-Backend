@@ -43,6 +43,9 @@ from models.model import(
     DeleteUserRequest,
     RouteCreateInput,
     CityResponse,
+    CityCoordinates,
+    CitySearchResult,
+    CitySearchResponse,
     CityByCountryRequest,
     GetAllCitiesResponse,
     GetCitiesByCountryResponse,
@@ -4137,4 +4140,80 @@ async def verify_email_code_endpoint(request: VerifyCodeRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error verifying code: {str(e)}") 
+
+
+async def search_cities_endpoint(query: str, limit: int, token: HTTPAuthorizationCredentials):
+    """
+    Search cities by name for autocomplete functionality.
+    Returns cities that match the search query with country information.
+    """
+    try:
+        # User authentication
+        payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        user = await user_collection.find_one({"username": username})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Search cities with case-insensitive regex
+        search_pattern = {"$regex": f"^{query}", "$options": "i"}
+        cities_cursor = cities_collection.find(
+            {
+                "name": search_pattern,
+                "active": True  # Only return active cities
+            },
+            {
+                "_id": 1,
+                "name": 1,
+                "country": 1,
+                "country_id": 1,
+                "coordinates": 1
+            }
+        ).limit(limit)
+        
+        cities = await cities_cursor.to_list(length=None)
+        
+        # Format results for UI
+        search_results = []
+        for city in cities:
+            city_result = CitySearchResult(
+                city_id=str(city["_id"]),
+                name=city.get("name", ""),
+                country=city.get("country", ""),
+                country_id=city.get("country_id", ""),
+                display_text=f"{city.get('name', '')}, {city.get('country', '')}",
+                coordinates=CityCoordinates(
+                    lat=city.get("coordinates", {}).get("lat", 0.0),
+                    lng=city.get("coordinates", {}).get("lng", 0.0)
+                ) if city.get("coordinates") else None
+            )
+            search_results.append(city_result)
+        
+        # Sort results alphabetically by name
+        search_results.sort(key=lambda x: x.name.lower())
+        
+        message = f"Found {len(search_results)} cities matching '{query}'"
+        if len(search_results) == 0:
+            message = f"No cities found matching '{query}'"
+            
+        return CitySearchResponse(
+            success=True,
+            message=message,
+            status_code=200,
+            data=search_results
+        )
+        
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        return CitySearchResponse(
+            success=False,
+            message=f"Error searching cities: {str(e)}",
+            status_code=500,
+            data=[]
+        )
 

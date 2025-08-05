@@ -217,6 +217,20 @@ class GetCitiesByCountryResponse(BaseModel):
     status_code: int
     data: list[CityResponse]
 
+class CitySearchResult(BaseModel):
+    city_id: str
+    name: str
+    country: str
+    country_id: str
+    display_text: str  # e.g., "Rome, Italy"
+    coordinates: Optional[CityCoordinates] = None
+
+class CitySearchResponse(BaseModel):
+    success: bool
+    message: str
+    status_code: int
+    data: List[CitySearchResult]
+
 class GetAllCountiesResponse(BaseModel):
     _id: str
     name: str

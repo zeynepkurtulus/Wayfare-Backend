@@ -260,6 +260,7 @@ It allows users to:
 - Create a customized daily schedule of activities (linked to places)
 - Specify must-visit places with notes and preferences
 - Generate AI-powered route recommendations based on travel style
+- Automatically store place images in activities during creation for optimal retrieval performance
 
 **Request Body:**
 ```json
@@ -318,9 +319,9 @@ It allows users to:
 
 It allows users to:
 - Retrieve all routes created by the authenticated user
-- View route summaries and basic information
+- View route summaries and basic information  
 - Access personal travel planning history
-- Get place images for each activity in the daily itinerary
+- Get stored place images for each activity in the daily itinerary (images are stored during route creation for optimal performance)
 
 **Response:**
 ```json

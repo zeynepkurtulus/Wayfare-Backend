@@ -2541,12 +2541,18 @@ async def create_smart_schedule(day_places, day_date, travel_style, city, travel
             print(f"DEBUG: Stopping schedule - approaching 21:00 ({current_time.strftime('%H:%M')})")
             break
         
+        # Get place image from database
+        place_image = None
+        if place_data and isinstance(place_data, dict):
+            place_image = place_data.get("image")
+        
         # Add place visit
         activity = Activity(
             place_id=place_id,
             place_name=place_name,
             time=current_time.strftime("%H:%M"),
-            notes=f"{place_notes} (Visit duration: {duration:.1f} hours)" if place_notes else f"Visit duration: {duration:.1f} hours"
+            notes=f"{place_notes} (Visit duration: {duration:.1f} hours)" if place_notes else f"Visit duration: {duration:.1f} hours",
+            image=place_image  # Store the image directly in the activity
         )
         schedule.append(activity)
         
@@ -2963,51 +2969,9 @@ async def get_user_routes_endpoint(token: HTTPAuthorizationCredentials):
         user_id = str(user["_id"])
         routes = await route_collection.find({"user_id": user_id}).to_list(length=None)
         
-        # Collect all unique place_ids from all routes to batch fetch images
-        all_place_ids = set()
-        for route in routes:
-            if "days" in route and route["days"]:
-                for day in route["days"]:
-                    if "activities" in day and day["activities"]:
-                        for activity in day["activities"]:
-                            place_id = activity.get("place_id")
-                            if place_id and not place_id.startswith(("travel_", "break_")):
-                                all_place_ids.add(place_id)
-        
-        # Batch fetch all place images in one query
-        place_images = {}
-        if all_place_ids:
-            places = await places_collection.find(
-                {"place_id": {"$in": list(all_place_ids)}},
-                {"place_id": 1, "image": 1}  # Only fetch place_id and image fields
-            ).to_list(length=None)
-            
-            # Create a lookup dictionary for fast access
-            place_images = {place["place_id"]: place.get("image") for place in places}
-        
-        # Process routes and add images using the lookup dictionary
+        # Process routes (images are now stored directly in activities during creation)
         route_responses = []
         for route in routes:
-            if "days" in route and route["days"]:
-                for day in route["days"]:
-                    if "activities" in day and day["activities"]:
-                        enhanced_activities = []
-                        for activity in day["activities"]:
-                            # Create enhanced activity with image
-                            enhanced_activity = activity.copy()
-                            
-                            # Add image from lookup dictionary
-                            place_id = activity.get("place_id")
-                            if place_id and not place_id.startswith(("travel_", "break_")):
-                                enhanced_activity["image"] = place_images.get(place_id)
-                            else:
-                                enhanced_activity["image"] = None
-                            
-                            enhanced_activities.append(enhanced_activity)
-                        
-                        # Replace activities with enhanced activities
-                        day["activities"] = enhanced_activities
-            
             route["route_id"] = str(route["_id"])
             route["user_id"] = str(route["user_id"])
             route.pop("_id", None)

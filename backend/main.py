@@ -52,6 +52,8 @@ from routers.router import(
     verify_email_code_endpoint,
     # Top rated places endpoint
     get_top_rated_places_endpoint,
+    # Place search for must-visit endpoint
+    search_places_for_must_visit_endpoint,
 )
 
 from models.model import (
@@ -269,6 +271,18 @@ async def search_cities(
     token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
 ):
     return await search_cities_endpoint(q, limit, token)
+
+
+# PLACE SEARCH FOR MUST-VISIT SELECTION
+@app.get("/places/search-must-visit", tags=["Places"])
+async def search_places_for_must_visit_main(
+    city: str,
+    query: str = "",
+    category: str = None,
+    limit: int = 20,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
+):
+    return await search_places_for_must_visit_endpoint(city, query, category, limit, token)
 
 
 @app.get("/cities/all", tags=["Cities"])

@@ -46,6 +46,8 @@ from models.model import(
     CityCoordinates,
     CitySearchResult,
     CitySearchResponse,
+    PlaceSearchResult,
+    PlaceSearchResponse,
     CityByCountryRequest,
     GetAllCitiesResponse,
     GetCitiesByCountryResponse,
@@ -4213,6 +4215,123 @@ async def search_cities_endpoint(query: str, limit: int, token: HTTPAuthorizatio
         return CitySearchResponse(
             success=False,
             message=f"Error searching cities: {str(e)}",
+            status_code=500,
+            data=[]
+        )
+
+
+# ==================== PLACE SEARCH ENDPOINT ====================
+async def search_places_for_must_visit_endpoint(
+    city: str,
+    query: str = "",
+    category: str = None,
+    limit: int = 20,
+    token: HTTPAuthorizationCredentials = None
+):
+    """
+    Search/autocomplete places for must-visit selection in route creation.
+    
+    Args:
+        city: City name to search places in
+        query: Search term for place names (optional, for autocomplete)
+        category: Optional category filter (museum, restaurant, etc.)
+        limit: Maximum number of places to return (default: 20, max: 50)
+        token: JWT authentication token
+        
+    Returns:
+        PlaceSearchResponse with list of matching places for UI selection
+    """
+    try:
+        # Validate authentication
+        if token:
+            payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+            username = payload.get("sub")
+            if not username:
+                raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        # Validate limit
+        limit = min(max(limit, 1), 50)  # Clamp between 1-50
+        
+        # Build query for places collection
+        search_query = {
+            "city": {"$regex": f"^{city}$", "$options": "i"},
+            "active": {"$ne": False}  # Exclude inactive places
+        }
+        
+        # Add name search if query provided (for autocomplete)
+        if query and len(query.strip()) > 0:
+            search_query["name"] = {"$regex": query.strip(), "$options": "i"}
+        
+        # Add category filter if provided (search wayfare_category primarily)
+        if category:
+            search_query["wayfare_category"] = {"$regex": f"^{category}$", "$options": "i"}
+        
+        # Query places collection with sorting by rating and name
+        places_cursor = places_collection.find(search_query).sort([
+            ("rating", -1),  # Primary sort: highest rated first
+            ("name", 1)      # Secondary sort: alphabetical for ties
+        ]).limit(limit)
+        
+        places = await places_cursor.to_list(length=limit)
+        
+        if not places:
+            search_info = f"in {city}"
+            if query:
+                search_info += f" matching '{query}'"
+            if category:
+                search_info += f" for category '{category}'"
+                
+            return PlaceSearchResponse(
+                success=True,
+                message=f"No places found {search_info}",
+                status_code=200,
+                data=[]
+            )
+        
+        # Build response data
+        search_results = []
+        for place in places:
+            # Build coordinates if available
+            coordinates = None
+            if place.get("coordinates"):
+                coords = place["coordinates"]
+                if isinstance(coords, dict) and coords.get("lat") is not None and coords.get("lng") is not None:
+                    coordinates = PlaceCoordinates(
+                        lat=float(coords["lat"]),
+                        lng=float(coords["lng"])
+                    )
+            
+            place_result = PlaceSearchResult(
+                place_id=place.get("place_id", ""),
+                name=place.get("name", ""),
+                category=place.get("category", ""),
+                wayfare_category=place.get("wayfare_category"),
+                rating=float(place.get("rating", 0.0)),
+                image=place.get("image"),
+                coordinates=coordinates,
+                address=place.get("address")
+            )
+            search_results.append(place_result)
+        
+        message = f"Found {len(search_results)} places in {city}"
+        if query:
+            message += f" matching '{query}'"
+        if category:
+            message += f" for category '{category}'"
+            
+        return PlaceSearchResponse(
+            success=True,
+            message=message,
+            status_code=200,
+            data=search_results
+        )
+        
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        return PlaceSearchResponse(
+            success=False,
+            message=f"Error searching places: {str(e)}",
             status_code=500,
             data=[]
         )

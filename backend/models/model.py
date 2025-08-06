@@ -231,6 +231,24 @@ class CitySearchResponse(BaseModel):
     status_code: int
     data: List[CitySearchResult]
 
+# ==================== PLACE SEARCH MODELS ====================
+# Forward reference for PlaceCoordinates - will be resolved later
+class PlaceSearchResult(BaseModel):
+    place_id: str
+    name: str
+    category: str
+    wayfare_category: Optional[str] = None
+    rating: float
+    image: Optional[str] = None
+    coordinates: Optional["PlaceCoordinates"] = None
+    address: Optional[str] = None
+
+class PlaceSearchResponse(BaseModel):
+    success: bool
+    message: str
+    status_code: int
+    data: List[PlaceSearchResult]
+
 class GetAllCountiesResponse(BaseModel):
     _id: str
     name: str

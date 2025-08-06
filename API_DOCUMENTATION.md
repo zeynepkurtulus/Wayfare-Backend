@@ -650,6 +650,69 @@ It allows users to:
 
 ---
 
+### **@GET /places/search-must-visit**
+🔒 **Requires Authentication**
+
+It allows users to:
+- Search and discover places for must-visit selection in route creation
+- Browse places by category with autocomplete functionality
+- Get comprehensive place information including ratings, images, and coordinates
+- Reduce typos and improve place selection accuracy in the UI
+
+**Query Parameters:**
+- `city` (string, required): Name of the city to search places in
+- `query` (string, optional): Search term for place names (autocomplete)
+- `category` (string, optional): Filter by wayfare_category (Cultural Sites, Entertainment, etc.)
+- `limit` (integer, optional): Maximum number of results (default: 20, max: 50)
+
+**Example Request:**
+```
+GET /places/search-must-visit?city=Rome&query=colos&category=Cultural%20Sites&limit=10
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Found 1 places in Rome matching 'colos' for category 'Cultural Sites'",
+    "status_code": 200,
+    "data": [
+        {
+            "place_id": "ChIJrRMgU7ZhLxMR...",
+            "name": "Colosseum",
+            "category": "historical_site",
+            "wayfare_category": "museum",
+            "rating": 4.7,
+            "image": "https://example.com/colosseum.jpg",
+            "coordinates": {
+                "lat": 41.8902,
+                "lng": 12.4922
+            },
+            "address": "Piazza del Colosseo, 1, Roma RM, Italy"
+        }
+    ]
+}
+```
+
+**Usage in UI:**
+- **Autocomplete**: Call with `query` parameter as user types
+- **Browse**: Call with `city` only to show popular places
+- **Filter**: Use `category` to filter by place types
+- **Selection**: Use returned `place_id` and `name` directly in route creation
+
+**Integration with Route Creation:**
+The response data can be directly used in the `/route/create` endpoint's `must_visit` array:
+```json
+{
+    "place_id": "ChIJrRMgU7ZhLxMR...",
+    "place_name": "Colosseum",
+    "source": "database",
+    "notes": "Morning visit preferred"
+}
+```
+
+---
+
 ### **@POST /places/autocomplete**
 🔒 **Requires Authentication**
 

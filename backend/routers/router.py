@@ -794,9 +794,11 @@ async def create_route_endpoint(
                 
                 max_per_category = base_limit
                 
-                # EXCEPTION: For short trips, be more lenient to ensure we have enough places
-                if num_days <= 3 and len(filtered_places) < (num_days * 2):
-                    max_per_category = max_per_category + 2  # Allow more variety for short trips
+                            # EXCEPTION: For longer trips, be more lenient to ensure we have enough places
+            if num_days >= 4 and len(filtered_places) < (num_days * 2):
+                max_per_category = max_per_category + 3  # Allow more variety for longer trips
+            elif num_days <= 3 and len(filtered_places) < (num_days * 2):
+                max_per_category = max_per_category + 2  # Allow more variety for short trips
                 
                 if category_counts[category_key] >= max_per_category:
                     print(f"DEBUG: Skipping {place_name} - category '{category_key}' limit reached ({max_per_category})")
@@ -896,11 +898,21 @@ async def create_route_endpoint(
             # Add additional places to fill remaining slots
             additional_needed = places_per_day - len(day_places)
             if additional_needed > 0 and additional_places:
-                # Take additional places for this day
-                start_idx = day * additional_needed
-                end_idx = start_idx + additional_needed
-                day_additional = additional_places[start_idx:end_idx]
-                day_places.extend(day_additional)
+                # IMPROVED: Better distribution of additional places
+                additional_index = 0
+                places_added = 0
+                
+                while places_added < additional_needed and len(additional_places) > 0:
+                    # Calculate index with cycling to ensure all days get different places
+                    place_index = (day * additional_needed + places_added) % len(additional_places)
+                    day_places.append(additional_places[place_index])
+                    places_added += 1
+                    
+                    # Safety check to prevent infinite loops
+                    if places_added >= len(additional_places):
+                        break
+                        
+                print(f"DEBUG: Day {day + 1} - Added {len(day_places)} places ({places_for_this_day} must-visit + {places_added} additional)")
             
             if day_places:
                 distributed_places.append(day_places)
@@ -1511,18 +1523,27 @@ def group_places_by_popularity(places, places_per_day, num_days):
         remaining_top = sorted_places[num_days:min_places_needed]
         extended_additional.extend(remaining_top)
         
-        # Finally, cycle through remaining places for variety
+        # Finally, cycle through remaining places for variety (FIXED LOGIC)
         remaining_places = sorted_places[min_places_needed:]
         
         # CRITICAL FIX: Prevent ZeroDivisionError when no remaining places
         if len(remaining_places) > 0:
-            cycles_needed = max(1, (target_places - len(extended_additional)) // len(remaining_places) + 1)
+            # IMPROVED: Add places one by one to avoid massive repetition
+            places_still_needed = target_places - len(extended_additional)
+            cycle_index = 0
             
-            for cycle in range(cycles_needed):
-                if cycle % 2 == 0:
-                    extended_additional.extend(remaining_places)
-                else:
-                    extended_additional.extend(reversed(remaining_places))
+            while len(extended_additional) < target_places and places_still_needed > 0:
+                # Add one place at a time, cycling through available places
+                place_to_add = remaining_places[cycle_index % len(remaining_places)]
+                extended_additional.append(place_to_add)
+                cycle_index += 1
+                places_still_needed -= 1
+                
+                # SAFETY: Prevent infinite loops
+                if cycle_index > target_places * 2:
+                    break
+                    
+            print(f"DEBUG: IMPROVED CYCLING - Added {cycle_index} places via controlled cycling")
         else:
             print(f"DEBUG: No remaining places to cycle - using existing {len(extended_additional)} places")
             # FALLBACK: If we still don't have enough places, duplicate the best ones
@@ -2234,7 +2255,10 @@ async def create_smart_schedule(day_places, day_date, travel_style, city, travel
             print(f"DEBUG: Time already past 20:30 ({current_time.strftime('%H:%M')}), stopping schedule")
             break
         
-        # Add travel time from previous place
+        # Calculate travel time from previous place (but don't add travel activity yet)
+        travel_time = 0
+        travel_activity_data = None
+        
         if i > 0:
             travel_time = await calculate_travel_time(day_places[i-1], place, city)
             
@@ -2260,19 +2284,15 @@ async def create_smart_schedule(day_places, day_date, travel_style, city, travel
                 print(f"DEBUG: Skipping travel to {current_place_name} - would start after 19:30 ({current_time.strftime('%H:%M')})")
                 break
                 
-            # ENFORCE: Add travel activity if significant (lowered threshold to show more travel activities)
+            # PREPARE: Travel activity data if significant (but don't add yet - wait until place is confirmed)
             if travel_time > 5:
-                # ENFORCE: Generate sequential travel ID with 3-digit format
-                travel_place_id = f"travel_{travel_counter:03d}"
-                travel_counter += 1
-
-                schedule.append(Activity(
-                    place_id=travel_place_id,
-                    place_name=f"Travel to {place.place_name if hasattr(place, 'place_name') else place.get('name')}",
-                    time=current_time.strftime("%H:%M"),
-                    notes=f"Travel time: {int(travel_time)} minutes"
-                ))
-
+                travel_activity_data = {
+                    'travel_time': travel_time,
+                    'place_name': place.place_name if hasattr(place, 'place_name') else place.get('name'),
+                    'start_time': current_time.strftime("%H:%M")
+                }
+                
+                # Update current time for travel (this will be used for place validation)
                 current_time += timedelta(minutes=travel_time)
 
         
@@ -2312,59 +2332,8 @@ async def create_smart_schedule(day_places, day_date, travel_style, city, travel
                 current_time = tea_end_time
                 print(f"DEBUG: Added afternoon tea break at {current_time.strftime('%H:%M')} for relaxed style")
         
-        # ENHANCED: Add dinner break with travel-style-specific timing
-        # For relaxed style, try to add dinner earlier (16:30-19:00) to ensure it fits
-        # For other styles, try normal dinner time (18:00-19:00)
-        dinner_window_start = 16 if travel_style == "relaxed" else 18
-        dinner_window_end = 19 if travel_style == "relaxed" else 19
-        
-        if (dinner_window_start <= current_time.hour < dinner_window_end + 1 and 
-            not dinner_added_today and 
-            i > 0):  # Don't add dinner as first activity
-            
-            # Longer dinner for relaxed style
-            dinner_duration = timedelta(hours=2 if travel_style == "relaxed" else (1.5 if travel_style == "moderate" else 1))
-            cutoff_time = datetime.combine(current_time.date(), datetime.strptime("20:30", "%H:%M").time())
-            
-            # Calculate when dinner would end
-            dinner_end_time = current_time + dinner_duration
-            
-            # Add buffer for potential travel after dinner
-            buffer_for_travel = timedelta(minutes=30)
-            total_end_time = dinner_end_time + buffer_for_travel
-            
-            # Only add dinner if it would end with enough buffer before cutoff
-            if total_end_time <= cutoff_time:
-                schedule.append(Activity(
-                    place_id="break_dinner",
-                    place_name="Dinner Break", 
-                    time=current_time.strftime("%H:%M"),
-                    notes="Extended dinner break - enjoy fine dining" if travel_style == "relaxed" else "Dinner break - try local restaurants"
-                ))
-                current_time = dinner_end_time
-                dinner_added_today = True
-                print(f"DEBUG: Added dinner break at {current_time.strftime('%H:%M')} (ends {dinner_end_time.strftime('%H:%M')})")
-            else:
-                print(f"DEBUG: Skipped dinner - would end too late ({dinner_end_time.strftime('%H:%M')}) with travel buffer")
-        
-        # FALLBACK: If relaxed style and no dinner added yet, try to add at end of day
-        if (travel_style == "relaxed" and not dinner_added_today and 
-            current_time.hour >= 17 and current_time.hour < 20):
-            # Try a shorter dinner if normal one doesn't fit
-            short_dinner_duration = timedelta(hours=1)
-            short_dinner_end = current_time + short_dinner_duration
-            cutoff_time = datetime.combine(current_time.date(), datetime.strptime("20:30", "%H:%M").time())
-            
-            if short_dinner_end <= cutoff_time:
-                schedule.append(Activity(
-                    place_id="break_dinner",
-                    place_name="Dinner Break",
-                    time=current_time.strftime("%H:%M"),
-                    notes="Dinner break - enjoy local cuisine"
-                ))
-                current_time = short_dinner_end
-                dinner_added_today = True
-                print(f"DEBUG: Added FALLBACK dinner break at {current_time.strftime('%H:%M')} for relaxed style")
+        # REMOVED: Complex in-loop dinner logic that caused inconsistencies
+        # Dinner will now be added at the end of the day for consistency
         
         # Get place details
         if hasattr(place, 'place_name'):  # Must visit place
@@ -2541,6 +2510,20 @@ async def create_smart_schedule(day_places, day_date, travel_style, city, travel
             print(f"DEBUG: Stopping schedule - approaching 21:00 ({current_time.strftime('%H:%M')})")
             break
         
+        # NOW ADD travel activity since place is confirmed to be visited
+        if travel_activity_data:
+            # ENFORCE: Generate sequential travel ID with 3-digit format
+            travel_place_id = f"travel_{travel_counter:03d}"
+            travel_counter += 1
+
+            schedule.append(Activity(
+                place_id=travel_place_id,
+                place_name=f"Travel to {travel_activity_data['place_name']}",
+                time=travel_activity_data['start_time'],
+                notes=f"Travel time: {int(travel_activity_data['travel_time'])} minutes"
+            ))
+            print(f"DEBUG: Added travel activity to {travel_activity_data['place_name']} at {travel_activity_data['start_time']}")
+        
         # Get place image from database
         place_image = None
         if place_data and isinstance(place_data, dict):
@@ -2575,6 +2558,41 @@ async def create_smart_schedule(day_places, day_date, travel_style, city, travel
         if current_time >= near_cutoff:
             print(f"DEBUG: Stopping schedule - approaching 20:30 cutoff ({current_time.strftime('%H:%M')}), preventing travel overflow")
             break
+    
+    # CONSISTENT DINNER LOGIC: Add dinner at end of day if not already added and there's time
+    if not dinner_added_today and len(schedule) > 0:  # Only add if we have other activities
+        # Find the latest activity time to determine when dinner can start
+        latest_time = current_time
+        
+        # Determine dinner timing based on travel style and available time
+        dinner_start_time = max(latest_time, datetime.combine(day_date, datetime.strptime("18:00", "%H:%M").time()))
+        
+        # Calculate dinner duration based on travel style
+        if travel_style == "relaxed":
+            dinner_duration = timedelta(hours=1.5)  # 1.5 hours for relaxed
+        elif travel_style == "moderate":
+            dinner_duration = timedelta(hours=1.25)  # 1.25 hours for moderate
+        else:  # accelerated
+            dinner_duration = timedelta(hours=1)  # 1 hour for accelerated
+        
+        dinner_end_time = dinner_start_time + dinner_duration
+        cutoff_time = datetime.combine(day_date, datetime.strptime("21:30", "%H:%M").time())  # Later cutoff for dinner
+        
+        # Add dinner if it fits within the schedule
+        if (dinner_start_time.hour >= 17 and  # Not too early (after 5 PM)
+            dinner_start_time.hour <= 20 and  # Not too late (before 8 PM start)
+            dinner_end_time <= cutoff_time):   # Must end before 21:30
+            
+            schedule.append(Activity(
+                place_id="break_dinner",
+                place_name="Dinner Break",
+                time=dinner_start_time.strftime("%H:%M"),
+                notes=f"Dinner break - enjoy local cuisine ({dinner_duration.total_seconds()/3600:.1f}h)"
+            ))
+            dinner_added_today = True
+            print(f"DEBUG: Added CONSISTENT dinner break at {dinner_start_time.strftime('%H:%M')} (ends {dinner_end_time.strftime('%H:%M')})")
+        else:
+            print(f"DEBUG: Skipped dinner - no suitable time slot (would start: {dinner_start_time.strftime('%H:%M')}, end: {dinner_end_time.strftime('%H:%M')})")
     
     # ENFORCE: Final validation - ensure no activities extend past 22:00
     validated_schedule = []

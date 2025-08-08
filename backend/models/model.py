@@ -84,7 +84,8 @@ class MustVisit(BaseModel):
     coordinates: Optional[Coordinates] = None
     notes: Optional[str] = None
     source: str
-    opening_hours: Optional[Dict[str, str]] = None  
+    opening_hours: Optional[Dict[str, str]] = None
+    image: Optional[str] = None  # Add image field for place images  
 
 class Activity(BaseModel):
     place_id: Optional[str] = None

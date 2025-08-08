@@ -409,7 +409,7 @@ It allows users to:
 
 It allows users to:
 - Retrieve all routes created by the authenticated user
-- View route summaries and basic information  
+- View route summaries and basic information
 - Access personal travel planning history
 - Get stored place images for each activity in the daily itinerary (images are stored during route creation for optimal performance)
 
@@ -489,6 +489,7 @@ It allows users to:
                 "coordinates": { "lat": 41.89, "lng": 12.49 },
                 "notes": "Morning preferred",
                 "source": "google",
+                "image": "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/15/f0/6b/18/gita-fuori-porta-avevo.jpg?w=500&h=400&s=1",
                 "opening_hours": {
                     "monday": "08:30-19:15",
                     "tuesday": "08:30-19:15"

@@ -491,6 +491,7 @@ async def create_route_endpoint(
                     print(f"DEBUG: {mv.place_name} - No valid coordinates available, skipping coordinates assignment")
                 must_visit_obj.address = place.address
                 must_visit_obj.opening_hours = place.opening_hours
+                must_visit_obj.image = getattr(place, 'image', None)  # Store image from scraper
                 print(f"DEBUG: {mv.place_name} - Enriched via scraper with place_id: {place.place_id}")
             else:
                 # Fallback for dict-like objects
@@ -503,6 +504,7 @@ async def create_route_endpoint(
                     print(f"DEBUG: {mv.place_name} - No valid coordinates in dict, skipping coordinates assignment")
                 must_visit_obj.address = place.get('address')
                 must_visit_obj.opening_hours = place.get('opening_hours')
+                must_visit_obj.image = place.get('image')  # Store image from scraper dict
                 print(f"DEBUG: {mv.place_name} - Enriched via scraper (dict) with place_id: {place.get('place_id')}")
         else:
             # Try to find place in places collection using name
@@ -523,6 +525,7 @@ async def create_route_endpoint(
                     )
                 must_visit_obj.address = db_place.get("address")
                 must_visit_obj.opening_hours = db_place.get("opening_hours", {})
+                must_visit_obj.image = db_place.get("image")  # Store image from database
                 print(f"DEBUG: {mv.place_name} - Found in database with place_id: {db_place.get('place_id')}")
             else:
                 print(f"DEBUG: {mv.place_name} - Exact match failed, trying smart partial matching...")
@@ -587,12 +590,14 @@ async def create_route_endpoint(
                         )
                     must_visit_obj.address = db_place.get("address")
                     must_visit_obj.opening_hours = db_place.get("opening_hours", {})
+                    must_visit_obj.image = db_place.get("image")  # Store image from database
                     print(f"DEBUG: {mv.place_name} - Found via smart matching with place_id: {db_place.get('place_id')}")
                     print(f"DEBUG: {mv.place_name} - Matched to database name: {db_place.get('name')}")
                 else:
                     must_visit_obj.opening_hours = {}
                     must_visit_obj.coordinates = None
                     must_visit_obj.address = None
+                    must_visit_obj.image = None  # No image available
                     if not must_visit_obj.place_id:
                         must_visit_obj.place_id = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
                     print(f"DEBUG: {mv.place_name} - Not found anywhere, using random place_id: {must_visit_obj.place_id}")

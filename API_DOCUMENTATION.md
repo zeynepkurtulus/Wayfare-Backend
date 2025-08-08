@@ -971,7 +971,7 @@ It allows users to:
 🔒 **Requires Authentication**
 
 It allows users to:
-- Retrieve the top 5 rated places based on aggregated user feedback
+- Retrieve the top 10 rated places based on aggregated user feedback
 - Get places with calculated average ratings from multiple feedback entries
 - Access complete place details including original ratings and feedback statistics
 - View places sorted by average feedback rating (highest first) and alphabetically by name

@@ -4186,7 +4186,7 @@ async def send_verification_email_endpoint(request: SendVerificationRequest):
 
 async def get_top_rated_places_endpoint(token: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     """
-    Get top 5 rated places based on aggregated feedback ratings.
+    Get top 10 rated places based on aggregated feedback ratings.
     Returns places with their average feedback rating and all place details.
     """
     try:
@@ -4226,7 +4226,7 @@ async def get_top_rated_places_endpoint(token: HTTPAuthorizationCredentials = De
                 }
             },
             {
-                "$limit": 5  # Get top 5 places
+                "$limit": 10  # Get top 10 places
             }
         ]
         
@@ -4265,9 +4265,9 @@ async def get_top_rated_places_endpoint(token: HTTPAuthorizationCredentials = De
                     detail_url=place.get("detail_url"),
                     opening_hours=place.get("opening_hours"),
                     coordinates=PlaceCoordinates(
-                        lat=place.get("coordinates", {}).get("lat", 0.0),
-                        lng=place.get("coordinates", {}).get("lng", 0.0)
-                    ) if place.get("coordinates") else None,
+                        lat=float(place.get("coordinates", {}).get("lat", 0.0) or 0.0),
+                        lng=float(place.get("coordinates", {}).get("lng", 0.0) or 0.0)
+                    ) if place.get("coordinates") and place.get("coordinates").get("lat") is not None and place.get("coordinates").get("lng") is not None else None,
                     address=place.get("address"),
                     source=place.get("source"),
                     country=place.get("country"),

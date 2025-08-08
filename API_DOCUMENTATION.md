@@ -8,11 +8,10 @@
 
 ## - Privacy System Implementation**
 
-### **📅 Released:** December 2024
 
-**⚠️ IMPORTANT**: The backend has been updated with a comprehensive privacy system that affects route creation and retrieval. Please update your code accordingly.
+** IMPORTANT**: The backend has been updated with a comprehensive privacy system that affects route creation and retrieval. Please update your code accordingly.
 
-### **🔄 Migration Required:**
+### ** Migration Required:**
 
 #### **1. Route Creation Changes:**
 ```javascript
@@ -35,7 +34,6 @@ const route = {
 ```
 
 #### **2. Response Schema Changes:**
-```javascript
 // All route responses now include:
 {
   "route_id": "...",
@@ -47,17 +45,16 @@ const route = {
 ```
 
 #### **3. Public Route Access Changes:**
-```javascript
-// ⚠️ BEHAVIOR CHANGE: These endpoints now only return PUBLIC routes
+// BEHAVIOR CHANGE: These endpoints now only return PUBLIC routes
 GET /routes/public     // Only shows is_public: true routes
 GET /routes/search     // Only searches is_public: true routes
 
-// ✅ UNCHANGED: User routes still return all routes (public + private)
+//  UNCHANGED: User routes still return all routes (public + private)
 GET /routes/user       // Shows all user's routes regardless of privacy
 ```
 
-### **🆕 New Endpoints:**
-```javascript
+### ** New Endpoints:**
+
 // Toggle route privacy
 PATCH /routes/{route_id}/privacy?is_public=true   // Make public
 PATCH /routes/{route_id}/privacy?is_public=false  // Make private
@@ -66,7 +63,7 @@ PATCH /routes/{route_id}/privacy?is_public=false  // Make private
 GET /routes/search?q=Rome&city=Paris&sort_by=popularity
 ```
 
-### **🛠️ Required Code Updates:**
+### ** Required Code Updates:**
 
 1. **Update route creation forms** to include optional `is_public` checkbox
 2. **Handle `is_public` field** in all route response parsers
@@ -74,14 +71,14 @@ GET /routes/search?q=Rome&city=Paris&sort_by=popularity
 4. **Add privacy toggle buttons** in route management interfaces
 5. **Test public route discovery** to ensure only public routes appear
 
-### **📊 Database Impact:**
+### ** Database Impact:**
 - **All existing routes** automatically set to `is_public: false` (private)
 - **No data loss** - all routes preserved with privacy protection
 - **Database migration** completed automatically
 
 ---
 
-## ⚙️ **Configuration**
+## **Configuration**
 
 ### **Email Configuration**
 - **Location:** `backend/config/email.py`
@@ -96,7 +93,7 @@ To switch email providers:
 
 ---
 
-## 👤 **User Management Endpoints**
+## **User Management Endpoints**
 
 ### **@POST /user/register**
 
@@ -154,7 +151,7 @@ It allows users to:
 ---
 
 ### **@POST /user/addInfo**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Add travel preferences and interests
@@ -185,7 +182,7 @@ It allows users to:
 ---
 
 ### **@GET /user/getCurrentUser**
-🔒 **Requires Authentication**
+ **Requires Authentication**
 
 It allows users to:
 - Retrieve current user profile information
@@ -212,7 +209,7 @@ It allows users to:
 ---
 
 ### **@POST /user/changePassword**
-🔒 **Requires Authentication**
+ **Requires Authentication**
 
 It allows users to:
 - Update account password securely
@@ -240,7 +237,7 @@ It allows users to:
 ---
 
 ### **@DELETE /user/delete**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Permanently delete their account
@@ -328,10 +325,10 @@ It allows users to:
 
 ---
 
-## 🗺️ **Route Management Endpoints**
+## **Route Management Endpoints**
 
 ### **@POST /route/create**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Create a customized daily schedule of activities (linked to places)
@@ -408,7 +405,7 @@ It allows users to:
 ---
 
 ### **@GET /routes/user**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Retrieve all routes created by the authenticated user
@@ -450,7 +447,7 @@ It allows users to:
 ---
 
 ### **@GET /routes/{route_id}**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Retrieve detailed information for a specific route
@@ -521,7 +518,7 @@ It allows users to:
 ---
 
 ### **@PUT /routes/{route_id}**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Update existing route information
@@ -562,7 +559,7 @@ It allows users to:
 ---
 
 ### **@DELETE /routes/{route_id}**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Permanently delete a specific route
@@ -584,7 +581,7 @@ It allows users to:
 ---
 
 ### **@PATCH /routes/{route_id}/privacy**
-🔒 **Requires Authentication** ⚠️ **Owner Only**
+**Requires Authentication** ⚠️ **Owner Only**
 
 It allows users to:
 - Toggle route privacy settings between public and private
@@ -630,7 +627,7 @@ PATCH /routes/64a1b2c3d4e5f6789abcdef1/privacy?is_public=false  # Make private
 }
 ```
 
-**🔒 Privacy Effects:**
+**Privacy Effects:**
 - **Making Public**: Route becomes discoverable via `/routes/public` and `/routes/search`
 - **Making Private**: Route removed from public listings, only accessible to owner
 - **Ownership**: Users can only change privacy of their own routes
@@ -638,7 +635,7 @@ PATCH /routes/64a1b2c3d4e5f6789abcdef1/privacy?is_public=false  # Make private
 ---
 
 ### **@GET /routes/public**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Browse **only public routes** shared by other users (excludes private routes)
@@ -736,7 +733,7 @@ GET /routes/search?q=cultural&city=Rome&travel_style=relaxed  # Combined search
 }
 ```
 
-**🔍 Search Features:**
+** Search Features:**
 - **Public Routes Only**: Searches only routes with `is_public: true`
 - **Smart Messages**: Response message shows what filters were applied
 - **Flexible Sorting**: Multiple sort options for different discovery needs
@@ -748,7 +745,7 @@ GET /routes/search?q=cultural&city=Rome&travel_style=relaxed  # Combined search
 ## 📍 **Places Management Endpoints**
 
 ### **@GET /places/city**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Retrieve all available places in a specific city
@@ -785,7 +782,7 @@ It allows users to:
 ---
 
 ### **@POST /places/id**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Retrieve detailed information for specific places by their IDs
@@ -826,7 +823,7 @@ It allows users to:
 ---
 
 ### **@POST /places/search**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Search for places using text queries
@@ -866,7 +863,7 @@ It allows users to:
 ---
 
 ### **@GET /places/search-must-visit**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Search and discover places for must-visit selection in route creation
@@ -929,7 +926,7 @@ The response data can be directly used in the `/route/create` endpoint's `must_v
 ---
 
 ### **@POST /places/autocomplete**
-🔒 **Requires Authentication**
+**Requires Authentication**
 
 It allows users to:
 - Get autocomplete suggestions for place names
@@ -1078,7 +1075,7 @@ It allows users to:
 
 ---
 
-## 🏙️ **Cities Management Endpoints**
+## **Cities Management Endpoints**
 
 ### **@GET /cities/search**
 🔒 **Requires Authentication**

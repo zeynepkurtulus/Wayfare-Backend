@@ -20,6 +20,7 @@ class Place:
     opening_hours: Optional[Dict[str, str]] = None
     wayfare_category: Optional[str] = None
     duration: Optional[int] = None  # Duration in minutes
+    image: Optional[str] = None  # Add image field
 
 class PlaceScraper:
     def __init__(self):
@@ -248,7 +249,8 @@ class PlaceScraper:
                 types=[db_place.get("wayfare_category", db_place.get("category", ""))] if db_place.get("wayfare_category") or db_place.get("category") else [],
                 opening_hours=db_place.get("opening_hours"),
                 wayfare_category=db_place.get("wayfare_category"),
-                duration=db_place.get("duration")
+                duration=db_place.get("duration"),
+                image=db_place.get("image")  # Include image from database
             )
         return None
 

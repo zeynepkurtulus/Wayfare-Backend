@@ -473,7 +473,8 @@ async def create_route_endpoint(
             place_id=mv.place_id,
             place_name=mv.place_name,
             notes=mv.notes,
-            source=mv.source
+            source=mv.source,
+            image=None  # Initialize image field
         )
 
         # Enrich with DB info

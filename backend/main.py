@@ -23,6 +23,8 @@ from routers.router import(
     update_route_endpoint,
     delete_route_endpoint,
     get_public_routes_endpoint,
+    search_public_routes_endpoint,
+    toggle_route_privacy_endpoint,
     get_cities_endpoint,
     search_cities_endpoint,
     get_cities_by_country_endpoint,
@@ -187,6 +189,33 @@ async def get_user_routes_main(
     return await get_user_routes_endpoint(token)
 
 
+@app.get("/routes/search", tags=["Route"])
+async def search_public_routes_main(
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+    q: Optional[str] = None,
+    city: Optional[str] = None,
+    country: Optional[str] = None,
+    category: Optional[str] = None,
+    season: Optional[str] = None,
+    budget: Optional[str] = None,
+    travel_style: Optional[str] = None,
+    limit: int = 20,
+    sort_by: str = "popularity"
+):
+    return await search_public_routes_endpoint(token, q, city, country, category, season, budget, travel_style, limit, sort_by)
+
+
+@app.get("/routes/public", tags=["Route"])
+async def get_public_routes_main(
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+    category: Optional[str] = None,
+    season: Optional[str] = None,
+    budget: Optional[str] = None,
+    limit: int = 10
+):
+    return await get_public_routes_endpoint(token, category, season, budget, limit)
+
+
 @app.get("/routes/{route_id}", tags=["Route"])
 async def get_route_by_id_main(
     route_id: str,
@@ -212,15 +241,13 @@ async def delete_route_main(
     return await delete_route_endpoint(route_id, token)
 
 
-@app.get("/routes/public", tags=["Route"])
-async def get_public_routes_main(
-    token: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
-    category: Optional[str] = None,
-    season: Optional[str] = None,
-    budget: Optional[str] = None,
-    limit: int = 10
+@app.patch("/routes/{route_id}/privacy", tags=["Route"])
+async def toggle_route_privacy_main(
+    route_id: str,
+    is_public: bool,
+    token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
 ):
-    return await get_public_routes_endpoint(token, category, season, budget, limit)
+    return await toggle_route_privacy_endpoint(route_id, is_public, token)
 
 
 # PLACES ENDPOINTS

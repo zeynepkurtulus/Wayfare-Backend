@@ -4,6 +4,83 @@
 **Authentication:** Bearer Token (JWT)  
 **Content-Type:** `application/json`
 
+---
+
+## - Privacy System Implementation**
+
+### **📅 Released:** December 2024
+
+**⚠️ IMPORTANT**: The backend has been updated with a comprehensive privacy system that affects route creation and retrieval. Please update your code accordingly.
+
+### **🔄 Migration Required:**
+
+#### **1. Route Creation Changes:**
+```javascript
+// OLD - No privacy control
+const route = {
+  title: "My Trip",
+  city: "Paris",
+  start_date: "2025-06-01",
+  end_date: "2025-06-07"
+}
+
+// NEW - Privacy control added
+const route = {
+  title: "My Trip", 
+  city: "Paris",
+  start_date: "2025-06-01",
+  end_date: "2025-06-07",
+  is_public: false  // ⭐ NEW FIELD - Routes are PRIVATE by default
+}
+```
+
+#### **2. Response Schema Changes:**
+```javascript
+// All route responses now include:
+{
+  "route_id": "...",
+  "title": "...",
+  // ... other fields ...
+  "is_public": true,  // ⭐ NEW FIELD in all route responses
+  "stats": { ... }
+}
+```
+
+#### **3. Public Route Access Changes:**
+```javascript
+// ⚠️ BEHAVIOR CHANGE: These endpoints now only return PUBLIC routes
+GET /routes/public     // Only shows is_public: true routes
+GET /routes/search     // Only searches is_public: true routes
+
+// ✅ UNCHANGED: User routes still return all routes (public + private)
+GET /routes/user       // Shows all user's routes regardless of privacy
+```
+
+### **🆕 New Endpoints:**
+```javascript
+// Toggle route privacy
+PATCH /routes/{route_id}/privacy?is_public=true   // Make public
+PATCH /routes/{route_id}/privacy?is_public=false  // Make private
+
+// Advanced public route search
+GET /routes/search?q=Rome&city=Paris&sort_by=popularity
+```
+
+### **🛠️ Required Code Updates:**
+
+1. **Update route creation forms** to include optional `is_public` checkbox
+2. **Handle `is_public` field** in all route response parsers
+3. **Update route listing UI** to show privacy status (lock icon for private routes)
+4. **Add privacy toggle buttons** in route management interfaces
+5. **Test public route discovery** to ensure only public routes appear
+
+### **📊 Database Impact:**
+- **All existing routes** automatically set to `is_public: false` (private)
+- **No data loss** - all routes preserved with privacy protection
+- **Database migration** completed automatically
+
+---
+
 ## ⚙️ **Configuration**
 
 ### **Email Configuration**
@@ -271,6 +348,7 @@ It allows users to:
     "end_date": "2025-06-07",
     "category": "city_break",
     "season": "summer",
+    "is_public": false,
     "must_visit": [
         {
             "place_id": "abc123",
@@ -301,6 +379,21 @@ It allows users to:
     ]
 }
 ```
+
+**Request Body Parameters:**
+- `title` (string, required): Route title/name
+- `city` (string, required): Destination city name
+- `start_date` (string, required): Trip start date in YYYY-MM-DD format
+- `end_date` (string, required): Trip end date in YYYY-MM-DD format
+- `category` (string, optional): Route category (default: "city_break")
+- `season` (string, optional): Travel season (auto-detected if not provided)
+- `is_public` (boolean, optional): Route visibility - **false = private** (default), **true = public**
+- `must_visit` (array, required): List of must-visit places with details
+
+**🔒 Privacy Control:**
+- **Private Routes** (`is_public: false`): Only visible to the creator via `/routes/user`
+- **Public Routes** (`is_public: true`): Visible to all users via `/routes/public` and `/routes/search`
+- **Default**: All routes are **private** unless explicitly set to public
 
 **Response:**
 ```json
@@ -385,6 +478,7 @@ It allows users to:
         "travel_style": "moderate", 
         "category": "city_break",
         "season": "summer",
+        "is_public": false,
         "stats": {
             "views_count": 5,
             "copies_count": 2,
@@ -489,13 +583,68 @@ It allows users to:
 
 ---
 
+### **@PATCH /routes/{route_id}/privacy**
+🔒 **Requires Authentication** ⚠️ **Owner Only**
+
+It allows users to:
+- Toggle route privacy settings between public and private
+- Control route visibility and discoverability
+- Manage sharing preferences for travel plans
+- Update privacy settings in real-time
+
+**Path Parameters:**
+- `route_id` (string): Unique identifier of the route
+
+**Query Parameters:**
+- `is_public` (boolean, required): **true** = make public, **false** = make private
+
+**Request Examples:**
+```
+PATCH /routes/64a1b2c3d4e5f6789abcdef1/privacy?is_public=true   # Make public
+PATCH /routes/64a1b2c3d4e5f6789abcdef1/privacy?is_public=false  # Make private
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Route privacy updated to public",
+    "status_code": 200
+}
+```
+
+**Error Responses:**
+```json
+// User doesn't own the route
+{
+    "success": false,
+    "message": "Unauthorized: You can only modify your own routes",
+    "status_code": 403
+}
+
+// Route not found
+{
+    "success": false,
+    "message": "Route not found",
+    "status_code": 404
+}
+```
+
+**🔒 Privacy Effects:**
+- **Making Public**: Route becomes discoverable via `/routes/public` and `/routes/search`
+- **Making Private**: Route removed from public listings, only accessible to owner
+- **Ownership**: Users can only change privacy of their own routes
+
+---
+
 ### **@GET /routes/public**
 🔒 **Requires Authentication**
 
 It allows users to:
-- Browse publicly shared routes from other users
-- Filter routes by category, season, and budget
-- Discover travel inspiration and ideas
+- Browse **only public routes** shared by other users (excludes private routes)
+- Filter public routes by category, season, and budget
+- Discover travel inspiration and ideas from the community
+- Access routes with `is_public: true` setting only
 
 **Query Parameters:**
 - `category` (string, optional): Filter by route category
@@ -528,6 +677,71 @@ It allows users to:
     ]
 }
 ```
+
+---
+
+### **@GET /routes/search**
+🔒 **Requires Authentication**
+
+It allows users to:
+- **Search only public routes** with advanced filtering options
+- Find routes by title/name, city, or country
+- Filter by category, season, budget, and travel style
+- Sort results by popularity, rating, recent, or alphabetically
+- Discover travel content through flexible search queries
+
+**Query Parameters:**
+- `q` (string, optional): Search query for route title (minimum 2 characters)
+- `city` (string, optional): Filter by exact city name
+- `country` (string, optional): Filter by exact country name
+- `category` (string, optional): Filter by route category
+- `season` (string, optional): Filter by travel season
+- `budget` (string, optional): Filter by budget level
+- `travel_style` (string, optional): Filter by travel style
+- `limit` (int, optional): Maximum results (default: 20, max: 50)
+- `sort_by` (string, optional): Sort order - "popularity" (default), "rating", "recent", "title"
+
+**Request Examples:**
+```
+GET /routes/search?q=Rome&limit=10                    # Search by title
+GET /routes/search?city=Paris&sort_by=popularity      # Search by city
+GET /routes/search?country=Italy&budget=medium        # Search by country + budget
+GET /routes/search?q=cultural&city=Rome&travel_style=relaxed  # Combined search
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Found 3 public routes for: title containing 'Rome', budget 'medium'",
+    "status_code": 200,
+    "data": [
+        {
+            "route_id": "64a1b2c3d4e5f6789abcdef2",
+            "user_id": "64a1b2c3d4e5f6789abcdef9",
+            "title": "Rome in 5 Days",
+            "city": "Rome",
+            "country": "Italy",
+            "category": "city_break",
+            "season": "spring",
+            "budget": "medium",
+            "is_public": true,
+            "stats": {
+                "views_count": 156,
+                "copies_count": 23,
+                "likes_count": 89
+            }
+        }
+    ]
+}
+```
+
+**🔍 Search Features:**
+- **Public Routes Only**: Searches only routes with `is_public: true`
+- **Smart Messages**: Response message shows what filters were applied
+- **Flexible Sorting**: Multiple sort options for different discovery needs
+- **Exact Matching**: City and country filters use exact matches
+- **Text Search**: Route title search supports partial matching
 
 ---
 

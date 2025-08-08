@@ -116,6 +116,7 @@ class Route(BaseModel):
     travel_style: str  # "relaxed", "moderate", "accelerated"
     category: str  # "city_break", "beach", "mountain", "road_trip"
     season: str  # "spring", "summer", "autumn", "winter"
+    is_public: bool = False  # Routes are private by default
     stats: RouteStats = Field(default_factory=lambda: RouteStats())
     must_visit: List[MustVisit]
     days: List[Day]
@@ -136,6 +137,7 @@ class RouteCreateInput(BaseModel):
     end_date: str
     category: str = "city_break"  # Default to city_break
     season: Optional[str] = None  # Will be auto-detected if not provided
+    is_public: Optional[bool] = False  # Routes are private by default
     must_visit: List[MustVisitInput]
 
 # Response models for routes
@@ -153,6 +155,7 @@ class RouteResponse(BaseModel):
     travel_style: str
     category: str
     season: str
+    is_public: bool
     stats: RouteStats
     must_visit: List[MustVisit]
     days: List[Day]

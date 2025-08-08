@@ -971,6 +971,7 @@ async def create_route_endpoint(
         travel_style=user_travel_style,
         category=route_input.category,
         season=season,
+        is_public=route_input.is_public if route_input.is_public is not None else False,  # Private by default
         stats=RouteStats(),
         must_visit=updated_must_visit,
         days=days,
@@ -3224,7 +3225,7 @@ async def get_public_routes_endpoint(
             )
         
         # Build query for public routes
-        query = {}
+        query = {"is_public": True}  # Only get public routes
         if category:
             query["category"] = category
         if season:
@@ -3232,7 +3233,7 @@ async def get_public_routes_endpoint(
         if budget:
             query["budget"] = budget
         
-        # Get routes (for now, all routes are public - you can add is_public field later)
+        # Get public routes only
         routes = await route_collection.find(query).limit(limit).to_list(length=None)
         
         route_responses = []
@@ -3262,6 +3263,192 @@ async def get_public_routes_endpoint(
             status_code=500,
             data=[]
         )
+
+
+async def search_public_routes_endpoint(
+    token: HTTPAuthorizationCredentials,
+    q: Optional[str] = None,
+    city: Optional[str] = None,
+    country: Optional[str] = None,
+    category: Optional[str] = None,
+    season: Optional[str] = None,
+    budget: Optional[str] = None,
+    travel_style: Optional[str] = None,
+    limit: int = 20,
+    sort_by: str = "popularity"
+):
+    """
+    Search public routes with multiple filters and sorting options
+    """
+    try:
+        # Get current user for authentication
+        payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if not username:
+            return RouteListResponse(
+                success=False,
+                message="Invalid credentials",
+                status_code=401,
+                data=[]
+            )
+        
+        # Build search query
+        query = {"is_public": True}  # Only search public routes
+        
+        # Text search on route title
+        if q and len(q.strip()) >= 2:
+            query["title"] = {"$regex": q.strip(), "$options": "i"}
+        
+        # Location filters
+        if city:
+            query["city"] = {"$regex": f"^{city}$", "$options": "i"}
+        
+        if country:
+            query["country"] = {"$regex": f"^{country}$", "$options": "i"}
+        
+        # Category filters
+        if category:
+            query["category"] = category
+        
+        if season:
+            query["season"] = season
+        
+        if budget:
+            query["budget"] = budget
+            
+        if travel_style:
+            query["travel_style"] = travel_style
+        
+        # Validate limit
+        limit = max(1, min(limit, 50))  # Between 1 and 50
+        
+        # Determine sort criteria
+        sort_criteria = []
+        if sort_by == "popularity":
+            sort_criteria = [("stats.views_count", -1), ("stats.likes_count", -1)]
+        elif sort_by == "rating":
+            # Sort by likes and views as proxy for rating
+            sort_criteria = [("stats.likes_count", -1), ("stats.views_count", -1)]
+        elif sort_by == "recent":
+            sort_criteria = [("created_at", -1)]
+        elif sort_by == "title":
+            sort_criteria = [("title", 1)]
+        else:
+            # Default to popularity
+            sort_criteria = [("stats.views_count", -1), ("stats.likes_count", -1)]
+        
+        # Execute search
+        routes = await route_collection.find(query).sort(sort_criteria).limit(limit).to_list(length=None)
+        
+        # Process results
+        route_responses = []
+        for route in routes:
+            route["route_id"] = str(route["_id"])
+            route["user_id"] = str(route["user_id"])
+            route.pop("_id", None)
+            route_responses.append(RouteResponse(**route))
+        
+        # Build response message
+        search_terms = []
+        if q:
+            search_terms.append(f"title containing '{q}'")
+        if city:
+            search_terms.append(f"city '{city}'")
+        if country:
+            search_terms.append(f"country '{country}'")
+        if category:
+            search_terms.append(f"category '{category}'")
+        if season:
+            search_terms.append(f"season '{season}'")
+        if budget:
+            search_terms.append(f"budget '{budget}'")
+        if travel_style:
+            search_terms.append(f"travel style '{travel_style}'")
+        
+        if search_terms:
+            message = f"Found {len(route_responses)} public routes for: {', '.join(search_terms)}"
+        else:
+            message = f"Found {len(route_responses)} public routes"
+        
+        return RouteListResponse(
+            success=True,
+            message=message,
+            status_code=200,
+            data=route_responses
+        )
+    
+    except JWTError:
+        return RouteListResponse(
+            success=False,
+            message="Invalid token",
+            status_code=401,
+            data=[]
+        )
+    except Exception as e:
+        return RouteListResponse(
+            success=False,
+            message=f"Search error: {str(e)}",
+            status_code=500,
+            data=[]
+        )
+
+
+async def toggle_route_privacy_endpoint(
+    route_id: str,
+    is_public: bool,
+    token: HTTPAuthorizationCredentials
+):
+    """
+    Toggle the privacy setting of a route (public/private)
+    """
+    try:
+        # Verify token and get user
+        payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if not username:
+            return {"success": False, "message": "Invalid credentials", "status_code": 401}
+        
+        user = await user_collection.find_one({"username": username})
+        if not user:
+            return {"success": False, "message": "User not found", "status_code": 404}
+        
+        user_id = str(user["_id"])
+        
+        # Validate route_id format
+        try:
+            route_object_id = ObjectId(route_id)
+        except:
+            return {"success": False, "message": "Invalid route ID format", "status_code": 400}
+        
+        # Get route and verify ownership
+        route = await route_collection.find_one({"_id": route_object_id})
+        if not route:
+            return {"success": False, "message": "Route not found", "status_code": 404}
+        
+        # Check if user owns the route
+        if str(route["user_id"]) != user_id:
+            return {"success": False, "message": "Unauthorized: You can only modify your own routes", "status_code": 403}
+        
+        # Update privacy setting
+        result = await route_collection.update_one(
+            {"_id": route_object_id},
+            {"$set": {"is_public": is_public, "updated_at": datetime.utcnow()}}
+        )
+        
+        if result.modified_count == 0:
+            return {"success": False, "message": "Failed to update route privacy", "status_code": 500}
+        
+        privacy_status = "public" if is_public else "private"
+        return {
+            "success": True,
+            "message": f"Route privacy updated to {privacy_status}",
+            "status_code": 200
+        }
+    
+    except JWTError:
+        return {"success": False, "message": "Invalid token", "status_code": 401}
+    except Exception as e:
+        return {"success": False, "message": f"Error: {str(e)}", "status_code": 500}
 
 
 ## FEEDBACK ENDPOINTS

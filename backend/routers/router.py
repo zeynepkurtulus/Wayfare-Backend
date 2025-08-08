@@ -3298,8 +3298,22 @@ async def search_public_routes_endpoint(
                 data=[]
             )
         
-        # Build search query
-        query = {"is_public": True}  # Only search public routes
+        # Get current user to exclude their routes
+        user = await user_collection.find_one({"username": username})
+        if not user:
+            return RouteListResponse(
+                success=False,
+                message="User not found",
+                status_code=404,
+                data=[]
+            )
+        
+        # Build search query - only public routes that are NOT from the current user
+        user_id = str(user["_id"])
+        query = {
+            "is_public": True,  # Only search public routes
+            "user_id": {"$ne": user_id}  # Exclude current user's routes
+        }
         
         # Text search on route title
         if q and len(q.strip()) >= 2:

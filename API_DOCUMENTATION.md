@@ -682,8 +682,8 @@ It allows users to:
 🔒 **Requires Authentication**
 
 It allows users to:
-- **Search only public routes** with advanced filtering options
-- Find routes by title/name, city, or country
+- **Search only public routes from other users** with advanced filtering options
+- Find routes by title/name, city, or country (excludes your own routes)
 - Filter by category, season, budget, and travel style
 - Sort results by popularity, rating, recent, or alphabetically
 - Discover travel content through flexible search queries
@@ -736,6 +736,7 @@ GET /routes/search?q=cultural&city=Rome&travel_style=relaxed  # Combined search
 
 ** Search Features:**
 - **Public Routes Only**: Searches only routes with `is_public: true`
+- **Excludes Own Routes**: Never returns the authenticated user's own routes
 - **Smart Messages**: Response message shows what filters were applied
 - **Flexible Sorting**: Multiple sort options for different discovery needs
 - **Exact Matching**: City and country filters use exact matches

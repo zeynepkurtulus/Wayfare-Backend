@@ -1483,7 +1483,7 @@ It allows users to:
 - Submit feedback and ratings for places they've visited
 - Add comments about their experience
 - Provide visit date information
-- Prevent duplicate feedback for the same place
+- Automatically update existing feedback if user already reviewed this place
 
 **Request Body:**
 ```json
@@ -1497,12 +1497,22 @@ It allows users to:
 
 **Response:**
 ```json
+// New feedback (first time)
 {
     "success": true,
     "message": "Place feedback submitted successfully",
     "status_code": 201,
     "feedback_id": "64f8a1b2c3d4e5f6789abc01",
     "created_at": "2024-12-01T10:30:00Z"
+}
+
+// Updated feedback (user already had feedback)
+{
+    "success": true,
+    "message": "Place feedback updated successfully",
+    "status_code": 200,
+    "feedback_id": "64f8a1b2c3d4e5f6789abc01",
+    "created_at": "2024-12-01T10:30:00Z"  // Original creation time preserved
 }
 ```
 

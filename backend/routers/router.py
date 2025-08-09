@@ -3501,9 +3501,30 @@ async def submit_place_feedback_endpoint(request: SubmitPlaceFeedbackRequest, to
         })
         
         if existing_feedback:
-            raise HTTPException(status_code=409, detail="Feedback already exists for this place. Use PUT to update.")
+            # Update existing feedback instead of creating new one
+            feedback_id = str(existing_feedback["_id"])
+            update_doc = {
+                "rating": request.rating,
+                "comment": request.comment,
+                "visited_on": request.visited_on,
+                "updated_at": datetime.utcnow()
+            }
+            
+            # Update the existing feedback
+            await place_feedback_collection.update_one(
+                {"_id": existing_feedback["_id"]},
+                {"$set": update_doc}
+            )
+            
+            return SubmitFeedbackResponse(
+                success=True,
+                message="Place feedback updated successfully",
+                status_code=200,
+                feedback_id=feedback_id,
+                created_at=existing_feedback["created_at"]
+            )
         
-        # Create feedback document
+        # Create new feedback document
         feedback_doc = {
             "user_id": user_id,
             "place_id": request.place_id,
@@ -3514,7 +3535,7 @@ async def submit_place_feedback_endpoint(request: SubmitPlaceFeedbackRequest, to
             "updated_at": datetime.utcnow()
         }
         
-        # Insert feedback
+        # Insert new feedback
         result = await place_feedback_collection.insert_one(feedback_doc)
         feedback_id = str(result.inserted_id)
         

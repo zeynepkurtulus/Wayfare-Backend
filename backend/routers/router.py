@@ -3804,8 +3804,14 @@ async def submit_route_feedback_endpoint(request: SubmitRouteFeedbackRequest, to
         
         user_id = str(user["_id"])
         
-        # Check if route exists
-        route = await route_collection.find_one({"route_id": request.route_id})
+        # Check if route exists (convert string to ObjectId for MongoDB lookup)
+        try:
+            from bson import ObjectId
+            route = await route_collection.find_one({"_id": ObjectId(request.route_id)})
+        except:
+            # If ObjectId conversion fails, try string lookup for backward compatibility
+            route = await route_collection.find_one({"route_id": request.route_id})
+        
         if not route:
             raise HTTPException(status_code=404, detail="Route not found")
         
@@ -3816,9 +3822,30 @@ async def submit_route_feedback_endpoint(request: SubmitRouteFeedbackRequest, to
         })
         
         if existing_feedback:
-            raise HTTPException(status_code=409, detail="Feedback already exists for this route. Use PUT to update.")
+            # Update existing feedback instead of creating new one
+            feedback_id = str(existing_feedback["_id"])
+            update_doc = {
+                "rating": request.rating,
+                "comment": request.comment,
+                "visited_on": request.visited_on,
+                "updated_at": datetime.utcnow()
+            }
+            
+            # Update the existing feedback
+            await route_feedback_collection.update_one(
+                {"_id": existing_feedback["_id"]},
+                {"$set": update_doc}
+            )
+            
+            return SubmitFeedbackResponse(
+                success=True,
+                message="Route feedback updated successfully",
+                status_code=200,
+                feedback_id=feedback_id,
+                created_at=existing_feedback["created_at"]
+            )
         
-        # Create feedback document
+        # Create new feedback document
         feedback_doc = {
             "user_id": user_id,
             "route_id": request.route_id,
@@ -3829,7 +3856,7 @@ async def submit_route_feedback_endpoint(request: SubmitRouteFeedbackRequest, to
             "updated_at": datetime.utcnow()
         }
         
-        # Insert feedback
+        # Insert new feedback
         result = await route_feedback_collection.insert_one(feedback_doc)
         feedback_id = str(result.inserted_id)
         

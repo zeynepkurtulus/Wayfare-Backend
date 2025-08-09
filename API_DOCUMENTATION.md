@@ -1650,6 +1650,7 @@ It allows users to:
 - Submit feedback and ratings for routes they've followed
 - Share their experience with route planning
 - Help other users with route recommendations
+- Automatically update existing feedback if user already reviewed this route
 
 **Request Body:**
 ```json
@@ -1663,12 +1664,22 @@ It allows users to:
 
 **Response:**
 ```json
+// New feedback (first time)
 {
     "success": true,
     "message": "Route feedback submitted successfully",
     "status_code": 201,
     "feedback_id": "64f8a1b2c3d4e5f6789abc02",
     "created_at": "2024-12-01T14:30:00Z"
+}
+
+// Updated feedback (user already had feedback)
+{
+    "success": true,
+    "message": "Route feedback updated successfully",
+    "status_code": 200,
+    "feedback_id": "64f8a1b2c3d4e5f6789abc02",
+    "created_at": "2024-12-01T14:30:00Z"  // Original creation time preserved
 }
 ```
 

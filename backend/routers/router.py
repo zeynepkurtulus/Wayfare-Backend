@@ -2752,19 +2752,26 @@ async def search_places_endpoint(
                 status_code=401,
                 data=[]
             )
-        # Build MongoDB query (no numeric filters)
-        query = {"city": {"$regex": f"^{request.city}$", "$options": "i"}}
-        if request.category:
-            # Search in both category and wayfare_category fields
+        # Build MongoDB query with partial city search
+        query = {"city": {"$regex": request.city, "$options": "i"}}
+        
+        # Add category filter only if provided and not empty
+        if request.category and request.category.strip():
             query["$or"] = [
-                {"category": {"$regex": f"^{request.category}$", "$options": "i"}},
-                {"wayfare_category": {"$regex": f"^{request.category}$", "$options": "i"}}
+                {"category": {"$regex": request.category, "$options": "i"}},
+                {"wayfare_category": {"$regex": request.category, "$options": "i"}}
             ]
-        if request.name:
+        
+        # Add name filter only if provided and not empty
+        if request.name and request.name.strip():
             query["name"] = {"$regex": request.name, "$options": "i"}
-        if request.country:
-            query["country"] = {"$regex": f"^{request.country}$", "$options": "i"}
-        if request.keywords:
+        
+        # Add country filter only if provided and not empty
+        if request.country and request.country.strip():
+            query["country"] = {"$regex": request.country, "$options": "i"}
+        
+        # Add keyword search only if provided and not empty
+        if request.keywords and request.keywords.strip():
             query["$text"] = {"$search": request.keywords}
         print("MongoDB query:", query)
         places = await places_collection.find(query).limit(request.limit or 10).to_list(length=None)
@@ -2792,8 +2799,8 @@ async def search_places_endpoint(
                     print(f"Filtered out by budget (medium): {place['name']} (price_value: {price_value})")
                     continue
                 # For 'high', do not filter out any places
-            # Rating filtering (Python-side)
-            if request.min_rating is not None and place.get("rating") is not None:
+            # Rating filtering (Python-side) - only filter if values > 0
+            if request.min_rating is not None and request.min_rating > 0 and place.get("rating") is not None:
                 try:
                     place_rating = float(place["rating"])
                     print(f"Place: {place['name']}, place_rating: {place_rating}, min_rating: {request.min_rating}")
@@ -2803,7 +2810,7 @@ async def search_places_endpoint(
                 except Exception as e:
                     print(f"Rating conversion error for {place['name']}: {e}")
                     continue
-            if request.rating is not None and place.get("rating") is not None:
+            if request.rating is not None and request.rating > 0 and place.get("rating") is not None:
                 try:
                     place_rating = float(place["rating"])
                     if place_rating != request.rating:

@@ -2774,7 +2774,7 @@ async def search_places_endpoint(
         if request.keywords and request.keywords.strip():
             query["$text"] = {"$search": request.keywords}
         print("MongoDB query:", query)
-        places = await places_collection.find(query).limit(request.limit or 10).to_list(length=None)
+        places = await places_collection.find(query).limit(request.limit or 20).to_list(length=None)
         print("Places returned from MongoDB:", len(places))
         for place in places:
             print(place)

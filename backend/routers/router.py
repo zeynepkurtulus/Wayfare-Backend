@@ -2770,9 +2770,26 @@ async def search_places_endpoint(
         if request.country and request.country.strip():
             query["country"] = {"$regex": request.country, "$options": "i"}
         
-        # Add keyword search only if provided and not empty
+        # Add keyword search only if provided and not empty (using regex for partial matching)
         if request.keywords and request.keywords.strip():
-            query["$text"] = {"$search": request.keywords}
+            keyword_regex = {"$regex": request.keywords, "$options": "i"}
+            keyword_conditions = [
+                {"name": keyword_regex},
+                {"description": keyword_regex},
+                {"category": keyword_regex},
+                {"wayfare_category": keyword_regex}
+            ]
+            
+            # Handle existing $or conditions from category search
+            if "$or" in query:
+                # Combine with existing $or conditions using $and
+                existing_or = query.pop("$or")
+                query["$and"] = [
+                    {"$or": existing_or},
+                    {"$or": keyword_conditions}
+                ]
+            else:
+                query["$or"] = keyword_conditions
         print("MongoDB query:", query)
         places = await places_collection.find(query).limit(request.limit or 20).to_list(length=None)
         print("Places returned from MongoDB:", len(places))

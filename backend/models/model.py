@@ -439,6 +439,7 @@ class UpdateRouteFeedbackRequest(BaseModel):
 class PlaceFeedbackResponse(BaseModel):
     feedback_id: str
     user_id: str
+    username: str
     place_id: str
     rating: int
     comment: Optional[str] = None
@@ -449,6 +450,7 @@ class PlaceFeedbackResponse(BaseModel):
 class RouteFeedbackResponse(BaseModel):
     feedback_id: str
     user_id: str
+    username: str
     route_id: str
     rating: int
     comment: Optional[str] = None

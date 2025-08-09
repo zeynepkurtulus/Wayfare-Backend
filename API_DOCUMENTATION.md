@@ -1522,7 +1522,7 @@ It allows users to:
 
 It allows users to:
 - Retrieve all feedback for a specific place
-- View ratings and comments from other users
+- View ratings and comments from other users with usernames
 - Access feedback history and statistics
 
 **Response:**
@@ -1535,6 +1535,7 @@ It allows users to:
         {
             "feedback_id": "64f8a1b2c3d4e5f6789abc01",
             "user_id": "64a1b2c3d4e5f6789abcdef0",
+            "username": "john_traveler",
             "place_id": "ChIJyWEHuEmuEmsRm9hTkapTCrk",
             "rating": 5,
             "comment": "Amazing place! The view was breathtaking.",
@@ -1699,7 +1700,7 @@ It allows users to:
 
 It allows users to:
 - Retrieve all feedback for a specific route
-- View user experiences and recommendations
+- View user experiences and recommendations with usernames
 - Access route quality information
 
 **Response:**

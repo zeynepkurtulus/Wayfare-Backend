@@ -3575,9 +3575,14 @@ async def get_place_feedback_endpoint(place_id: str, token: HTTPAuthorizationCre
         # Convert to response format
         feedback_responses = []
         for feedback in feedback_list:
+            # Get username for this feedback
+            user = await user_collection.find_one({"_id": ObjectId(feedback["user_id"])})
+            username = user.get("username", "Unknown") if user else "Unknown"
+            
             feedback_response = PlaceFeedbackResponse(
                 feedback_id=str(feedback["_id"]),
                 user_id=feedback["user_id"],
+                username=username,
                 place_id=feedback["place_id"],
                 rating=feedback["rating"],
                 comment=feedback.get("comment"),
@@ -3619,9 +3624,14 @@ async def get_user_place_feedback_endpoint(place_id: str, user_id: str, token: H
         if not feedback:
             raise HTTPException(status_code=404, detail="Feedback not found")
         
+        # Get username for this feedback
+        user = await user_collection.find_one({"_id": ObjectId(feedback["user_id"])})
+        username = user.get("username", "Unknown") if user else "Unknown"
+        
         feedback_response = PlaceFeedbackResponse(
             feedback_id=str(feedback["_id"]),
             user_id=feedback["user_id"],
+            username=username,
             place_id=feedback["place_id"],
             rating=feedback["rating"],
             comment=feedback.get("comment"),
@@ -3905,8 +3915,14 @@ async def get_route_feedback_endpoint(route_id: str, token: HTTPAuthorizationCre
         if not username:
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
-        # Check if route exists
-        route = await route_collection.find_one({"route_id": route_id})
+        # Check if route exists (convert string to ObjectId for MongoDB lookup)
+        try:
+            from bson import ObjectId
+            route = await route_collection.find_one({"_id": ObjectId(route_id)})
+        except:
+            # If ObjectId conversion fails, try string lookup for backward compatibility
+            route = await route_collection.find_one({"route_id": route_id})
+        
         if not route:
             raise HTTPException(status_code=404, detail="Route not found")
         
@@ -3917,9 +3933,14 @@ async def get_route_feedback_endpoint(route_id: str, token: HTTPAuthorizationCre
         # Convert to response format
         feedback_responses = []
         for feedback in feedback_list:
+            # Get username for this feedback
+            user = await user_collection.find_one({"_id": ObjectId(feedback["user_id"])})
+            username = user.get("username", "Unknown") if user else "Unknown"
+            
             feedback_response = RouteFeedbackResponse(
                 feedback_id=str(feedback["_id"]),
                 user_id=feedback["user_id"],
+                username=username,
                 route_id=feedback["route_id"],
                 rating=feedback["rating"],
                 comment=feedback.get("comment"),
@@ -3952,8 +3973,14 @@ async def get_route_feedback_stats_endpoint(route_id: str, token: HTTPAuthorizat
         if not username:
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
-        # Check if route exists
-        route = await route_collection.find_one({"route_id": route_id})
+        # Check if route exists (convert string to ObjectId for MongoDB lookup)
+        try:
+            from bson import ObjectId
+            route = await route_collection.find_one({"_id": ObjectId(route_id)})
+        except:
+            # If ObjectId conversion fails, try string lookup for backward compatibility
+            route = await route_collection.find_one({"route_id": route_id})
+        
         if not route:
             raise HTTPException(status_code=404, detail="Route not found")
         
@@ -4125,9 +4152,14 @@ async def get_user_route_feedback_endpoint(route_id: str, user_id: str, token: H
         if not feedback:
             raise HTTPException(status_code=404, detail="Feedback not found")
         
+        # Get username for this feedback
+        user = await user_collection.find_one({"_id": ObjectId(feedback["user_id"])})
+        username = user.get("username", "Unknown") if user else "Unknown"
+        
         feedback_response = RouteFeedbackResponse(
             feedback_id=str(feedback["_id"]),
             user_id=feedback["user_id"],
+            username=username,
             route_id=feedback["route_id"],
             rating=feedback["rating"],
             comment=feedback.get("comment"),
